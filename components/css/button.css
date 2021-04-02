@@ -1,0 +1,21 @@
+.button{
+    float: left;
+  
+    font-size: 16px;
+    font-weight: bold;
+    padding: 5px;
+    border-radius: 2px;
+    border: 2px solid black ;
+    margin: 20px;
+    background-color: rgb(173, 26, 26);
+    color: black;
+  
+    cursor: pointer;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  .button:hover{
+    background-color: rgb(103, 24, 207);
+  }

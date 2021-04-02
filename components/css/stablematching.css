@@ -1,0 +1,63 @@
+.svgContainer{
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    z-index: -10;
+  }
+   
+  #rightContainer{
+    position: absolute;
+    left: 55%;
+    width: 40%;
+    bottom: 7%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;  
+  }
+  
+  #leftContainer{
+    position: absolute;
+    left: 5%;
+    width: 40%;
+    bottom: 7%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;  
+  }
+  
+  #menu{
+    position: absolute;
+    width: 100%;
+    background-color: rgb(20, 20, 20);
+  }
+  
+  #headline{
+    float: left;
+    margin: 20px;
+    font-size: 25px;
+    font-weight: bold;
+  }
+  
+  .toggle{
+    padding: 5px;
+    border: black solid 2px;
+    margin: 20px;
+    font-weight: bold;
+    
+    background-image: linear-gradient(90deg, green 0%,red 65%);
+    vertical-align: auto;
+    float: right;
+  }
+  
+  #counter{
+    float: left;
+    margin: 20px;
+    margin-left: 7px;
+    border: 2px solid white;
+    border-radius: 20px;
+    padding: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
