@@ -49,7 +49,7 @@ export default class StableMatching extends React.Component{
 
   generateData = () =>{ //set  ups empty array
 
-    const size = document.getElementById("slider").value;
+    const size = parseInt(document.getElementById("slider").value);
 
     this.setState({
       size: size,
@@ -114,11 +114,10 @@ export default class StableMatching extends React.Component{
     const x2 = rect2.left+10;
     const y2 = (rect2.top+rect2.bottom)/2;
     const line = (
-      <div className="svgContainer">
+      <div className="svgContainer" key = {"Y: "+y1}>
         <svg id="svg"  width="100%" height="100%"><line x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth="5"/></svg>
       </div>
       );
-    //line.style.height = "500px"
     return line;
   }  
 
@@ -147,32 +146,21 @@ export default class StableMatching extends React.Component{
     });
   }
 
-  checkAllocation(allocation){ //checks the hole allocation 
+  checkAllocation(allocation){  //checks the hole allocation 
     const rightallocation = new Array(this.state.size);
     for (let i = 0; i < allocation.length; i++) {
-      rightallocation[allocation[i].partner-1] = {partner: i+1};
+      rightallocation[allocation[i].partner-1] = {partner: i+1};   //generates allocation for girls
     }
-    for (let i = 0; i < allocation.length; i++) {
-      const paared = allocation[i].partner;
-      for (let index = 0; index < allocation.length; index++) {
-        const choice = this.LEFT[i][index]  
-        if(paared === choice){
-          allocation[i].nChoice = index+1;
-          break;
-        }
-      }      
+    return this.checkAllocations(allocation,rightallocation);
+  }
+
+  checkAllocations(allocation,rightallocation){
+    for (let i = 0; i < allocation.length; i++) {  //gets the preference of the partner
+      allocation[i].nChoice = this.getNChoice(this.LEFT[i],allocation[i].partner);
+      rightallocation[i].nChoice = this.getNChoice(this.RIGHT[i],rightallocation[i].partner);  
     }
-    for (let i = 0; i < allocation.length; i++) {
-      const paared = rightallocation[i].partner;
-      for (let index = 0; index < allocation.length; index++) {
-        const choice = this.RIGHT[i][index]
-        if(paared === choice){
-          rightallocation[i].nChoice = index+1;
-          break;
-        }
-      }      
-    }
-    for (let i = 0; i < allocation.length; i++) {
+
+    for (let i = 0; i < allocation.length; i++) { //checks if the match is stable
       const stable = this.isStable(i,allocation,rightallocation);
       allocation[i].stable = stable;
       if(stable){
@@ -183,6 +171,15 @@ export default class StableMatching extends React.Component{
       
     }
     return allocation;
+  }
+
+  getNChoice(preferences,partner){ 
+    for (let i = 0; i < preferences.length; i++) {
+      const choice = preferences[i]  
+      if(partner === choice){
+        return i+1;
+      }
+    }      
   }
 
   isStable(left,allocation,rightallocation){ //checks a match if its stable
@@ -226,7 +223,7 @@ export default class StableMatching extends React.Component{
   }
 
 
-  studentsFirst = () => { //creats allocation
+  boysFirst = () => { //creats allocation
     let allocation = new Array(this.state.size);
     const unmatched = this.RIGHT.map( 
       ()=> {return(true)
@@ -246,18 +243,17 @@ export default class StableMatching extends React.Component{
       }
     }
     const ready = this.checkAllocation(allocation);
-    this.setState();
     this.setState({
-      algorithm: "studentsFirst",
+      algorithm: "boysFirst",
       readyAllocation: ready
     });
     this.drawLines(ready);
   };
 
-  collegeFirst = () => { //creats allocation
+  girlsFirst = () => { //creats allocation
+
     let allocation = new Array(this.state.size);
-    allocation.fill({});
-    const unmatched = this.LEFT.map( 
+    const unmatched = this.RIGHT.map( 
       ()=> {return(true)
     });
     for (let i = 0; i < this.LEFT.length; i++) {
@@ -274,11 +270,66 @@ export default class StableMatching extends React.Component{
         }
       }
     }
-    console.log("Allocation ready: ");
-    console.log(allocation);
     const ready = this.checkAllocation(allocation);
     this.setState({
-      algorithm: "collegeFirst",
+      algorithm: "girlsFirst",
+      readyAllocation: ready 
+    });
+    this.drawLines(ready);
+  }
+
+  galeShapley = () => {
+    let leftAllocation =  new Array(this.state.size).fill().map(() => ({partner: null}));
+    let rightAllocation = new Array(this.state.size).fill().map(() => ({partner: null}));
+    let unmatched = leftAllocation.map (
+      () => {
+        return(true)
+      });
+    let someoneUnmatched = true;
+    let currentLeftIndex = 0;
+    while (someoneUnmatched) {
+
+      for (let i = 0; i < leftAllocation.length; i++) {
+        if(leftAllocation[currentLeftIndex].partner!=null){
+          break;
+        }
+        const choice = this.LEFT[currentLeftIndex][i]-1;
+        //console.log("Index "+currentLeftIndex+" choice "+choice+" i "+i);
+        if(rightAllocation[choice].partner===null){
+          rightAllocation[choice].partner = currentLeftIndex+1;
+          leftAllocation[currentLeftIndex].partner = choice+1;
+          unmatched[currentLeftIndex] = false;
+          break;
+        }else{
+          const oldPartner = rightAllocation[choice].partner;
+          const nChoiceOld = this.getNChoice(this.RIGHT[choice],oldPartner)
+          const nChoiceNew = this.getNChoice(this.RIGHT[choice],currentLeftIndex+1);
+          //console.log("else oldpartner "+oldPartner+" oldN "+nChoiceOld+" newN "+nChoiceNew);
+          if(nChoiceNew<nChoiceOld){
+            rightAllocation[choice].partner = currentLeftIndex+1;
+            leftAllocation[oldPartner-1].partner=null;
+            leftAllocation[currentLeftIndex].partner = choice+1;
+            unmatched[currentLeftIndex] = false;
+            unmatched[oldPartner-1] = true;
+            break;
+          }
+        }
+      }
+    
+      someoneUnmatched = false;  //proofs if there is someone whos not matched yet
+      for (let i = 0; i < unmatched.length; i++) {
+        if(unmatched[i]){
+          someoneUnmatched = true;
+        }        
+      }
+      currentLeftIndex++;
+      if(currentLeftIndex === leftAllocation.length){
+        currentLeftIndex = 0;
+      }
+    }
+    const ready = this.checkAllocations(leftAllocation,rightAllocation);
+    this.setState({
+      algorithm: "galeShapley",
       readyAllocation: ready 
     });
     this.drawLines(ready);
@@ -313,11 +364,14 @@ export default class StableMatching extends React.Component{
           lines: null
         });
         break;
-      case "studentsFirst":
-        this.studentsFirst();
+      case "boysFirst":
+        this.boysFirst();
       break;
-      case  "collegeFirst":
-        this.collegeFirst();
+      case  "girlsFirst":
+        this.girlsFirst();
+      break;
+      case "galeShapley":
+        this.galeShapley();
       break;
       case  "test":
         this.testAllocation();
@@ -379,7 +433,7 @@ export default class StableMatching extends React.Component{
       document.getElementById("colorblind").style.backgroundImage = "linear-gradient(90deg, green 0%,red 65%)";
     }else{
       this.setState({colorBlind: true});
-      document.getElementById("colorblind").style.backgroundImage = "linear-gradient(90deg, green 30%,blue 100%)";
+      document.getElementById("colorblind").style.backgroundImage = "linear-gradient(90deg, green 40%,blue 100%)";
     }
     this.setState({readyAllocation: null});
     setTimeout(()=>{
@@ -401,15 +455,15 @@ export default class StableMatching extends React.Component{
           <Button onClick={this.generateData} text="Generate"></Button>
           <Slider min="2" max="15" onInput={this.setCounter}></Slider>
           <span id ="counter">07</span>
-          <Button onClick={this.studentsFirst} text="Boys first"></Button>
-          <Button onClick={this.collegeFirst} text="Girls first"></Button>
+          <Button onClick={this.boysFirst} text="Boys first"></Button>
+          <Button onClick={this.girlsFirst} text="Girls first"></Button>
+          <Button onClick={this.galeShapley} text="Gale Shapley algorithm"></Button>
           <div className="toggle" id="colorblind" onClick = {this.colorblindMode} >Colorblind Mode</div>
         </div>
     );
 
     return(
-      <div id ="Programm">
-        {/*<button onClick={this.collegeFirst}>Draw lines</button>*/}
+      <div id ="StableMatching">
         {menu}
         <div id ="leftContainer">
           {this.state.leftBlocks}
